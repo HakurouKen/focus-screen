@@ -2,11 +2,33 @@
 
 Type: prototype
 Label: wayfinder:prototype
-Status: open
-Assignee: none
+Status: claimed
+Assignee: codex
 Parent: ../map.md
 Blocked by: 01, 02
 
 ## Question
 
 在双屏明暗构图下，哪种方案能同时作为应用图标与简化单色菜单栏图标，并与最终英文名协调？提供少量粗略视觉对比，在实际菜单栏小尺寸及深浅背景下检视辨识度，由用户选择形状、明暗关系与配色方向。明确选中屏幕的表达不会被误认成显示器排列设置；本票产出是可讨论的原型与设计决定，不是正式资产。
+
+## Comments
+
+### 第一轮构图原型（等待用户选择）
+
+- 原型分支：prototype/sidelit-icons；提交：6967d0e。
+- worktree：.codex/worktrees/sidelit-icons；原工作区分支：main。
+- [交互比较稿](../../../.codex/worktrees/sidelit-icons/Resources/icon-prototype.html)，支持 ?variant=all/A/B/C、底部切换和方向键。
+- [总览截图](../../../.codex/worktrees/sidelit-icons/Resources/icon-prototype-overview.png)。
+- 运行：在原型 worktree 根目录执行 `open Resources/icon-prototype.html`。原型无网络依赖，不参与应用构建，保留在独立分支供评审，不合并到 main。
+
+三个方案统一采用深蓝灰与暖白，先比较结构：
+
+| 方案 | 构图 | 评审意见 |
+| --- | --- | --- |
+| A 并排 | 两块横向屏幕，一明一暗 | 当前推荐：屏幕对象最清楚，菜单栏简洁；品牌个性相对克制。 |
+| B 叠屏 | 明亮屏幕在前，暗屏在后 | 最紧凑，但更容易被误认成窗口级工具。 |
+| C 侧光 | 双屏错位，亮屏带斜切明暗面 | 呼应 Sidelit 的意象，但斜面可能像进度或电量，需要用户判断。 |
+
+已通过浏览器检查：总览截图无截断、B 按钮切换至 ?variant=B、右方向键切换至 C，页面未报告脚本错误。查看 16/18/22 CSS 像素单色图标及深浅背景；已将初稿过于竖长的屏幕改为横向比例。此为浏览器模拟，不代表原生 macOS 菜单栏验证。
+
+尚未确定最终构图、配色和状态变化。用户选择基本构图后，再确认暂停／不可用时是否需要变化。
