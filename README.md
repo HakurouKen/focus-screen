@@ -31,4 +31,6 @@ open dist/Sidelit.app
 
 ## 开发
 
-运行测试：`./scripts/test.sh`。修改图标源文件后，运行 `./scripts/generate-icons.sh` 重新生成应用图标。
+运行测试：`./scripts/test.sh`。
+
+替换图标：`./scripts/generate-icons.sh path/to/icon.png`（也支持 JPG/JPEG）。使用正方形图片，建议 1024×1024 的透明 PNG；输出为 `Resources/AppIcon.icns`。不传参数时使用 `Resources/AppIcon.png`，普通构建无需重新转换。
