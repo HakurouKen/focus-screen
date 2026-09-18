@@ -10,6 +10,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var frames: [CGRect] = []
     private var timer: Timer?
     private let reader = FocusReader()
+    private let scheduler = RefreshScheduler()
+    private var displayedScreen: Int?
+    private var needsPanelUpdate = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -29,33 +32,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quit.target = self
         menu.addItem(quit)
         statusItem.menu = menu
-        // 定时读取兼容不发送 AX 焦点通知的应用，菜单展开时也继续更新。
-        let timer = Timer(timeInterval: 0.25, target: self, selector: #selector(refresh),
-                          userInfo: nil, repeats: true)
-        timer.tolerance = 0.05
-        RunLoop.main.add(timer, forMode: .common)
-        self.timer = timer
-        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(refresh),
+        scheduler.action = { [weak self] in self?.refresh() }
+        reader.onChange = { [weak self] in self?.scheduler.request() }
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemChanged),
             name: NSWorkspace.didActivateApplicationNotification, object: nil)
-        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(refresh),
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemChanged),
             name: NSWorkspace.activeSpaceDidChangeNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(refresh),
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemChanged),
+            name: NSWorkspace.didWakeNotification, object: nil)
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemChanged),
+            name: NSWorkspace.didTerminateApplicationNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(systemChanged),
             name: NSApplication.didChangeScreenParametersNotification, object: nil)
         refresh()
     }
 
     @objc private func refresh() {
+        defer { needsPanelUpdate = false }
         let screens = NSScreen.screens
         let currentFrames = screens.map(\.frame)
         if currentFrames != frames {
             panels.forEach { $0.close() }
             frames = currentFrames
             panels = frames.map { DimPanel(frame: $0) }
+            displayedScreen = nil
         }
-        guard enabled else { clear("已暂停"); return }
-        guard AXIsProcessTrusted() else { clear("需要辅助功能授权"); return }
-        guard screens.count > 1 else { clear("单屏幕，无需调暗"); return }
-        guard let primary = screens.first, let axFrame = reader.windowFrame(),
+        guard enabled, screens.count > 1 else {
+            reader.stopObserving()
+            setPollingInterval(nil)
+            clear(enabled ? "单屏幕，无需调暗" : "已暂停")
+            return
+        }
+        guard AXIsProcessTrusted() else {
+            reader.stopObserving()
+            setPollingInterval(2)
+            clear("需要辅助功能授权")
+            return
+        }
+        let axFrame = reader.windowFrame()
+        setPollingInterval(reader.hasCompleteObservation && axFrame != nil ? 2 : 0.25)
+        guard let primary = screens.first, let axFrame,
               let index = focusedScreenIndex(
                 window: appKitFrame(fromAX: axFrame, primaryHeight: primary.frame.height),
                 screens: frames) else {
@@ -64,6 +80,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         stateItem.title = "焦点：\(screens[index].localizedName)"
         statusItem.button?.toolTip = stateItem.title
+        guard displayedScreen != index || needsPanelUpdate else { return }
+        displayedScreen = index
         for (offset, panel) in panels.enumerated() {
             if offset == index { panel.orderOut(nil) }
             else { panel.orderFrontRegardless() }
@@ -71,14 +89,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func clear(_ message: String) {
-        panels.forEach { $0.orderOut(nil) }
+        if displayedScreen != nil { panels.forEach { $0.orderOut(nil) } }
+        displayedScreen = nil
         stateItem.title = message
         statusItem.button?.toolTip = message
+    }
+
+    private func setPollingInterval(_ interval: TimeInterval?) {
+        guard timer?.timeInterval != interval else { return }
+        timer?.invalidate()
+        timer = nil
+        guard let interval else { return }
+        let timer = Timer(timeInterval: interval, target: self, selector: #selector(refresh),
+                          userInfo: nil, repeats: true)
+        timer.tolerance = interval == 2 ? 0.2 : 0.05
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+    }
+
+    @objc private func systemChanged() {
+        // 即使焦点屏幕没变，Space 切换后也需重新确认遮罩的窗口顺序。
+        needsPanelUpdate = true
+        scheduler.refreshImmediately()
     }
 
     @objc private func toggle() {
         enabled.toggle()
         toggleItem.state = enabled ? .on : .off
+        scheduler.cancel()
         refresh()
     }
 
@@ -94,6 +132,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         timer?.invalidate()
+        scheduler.cancel()
+        reader.stopObserving()
         panels.forEach { $0.close() }
         NSWorkspace.shared.notificationCenter.removeObserver(self)
         NotificationCenter.default.removeObserver(self)
