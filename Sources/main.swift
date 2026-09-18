@@ -1,11 +1,15 @@
 import AppKit
 import ApplicationServices
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private let stateItem = NSMenuItem(title: "正在检测焦点…", action: nil, keyEquivalent: "")
     private let toggleItem = NSMenuItem(title: "启用屏幕调暗", action: #selector(toggle), keyEquivalent: "")
-    private var enabled = true
+    private let config = AppConfig()
+    private let loginItem = LoginItemController()
+    private let loginItemMenu = NSMenuItem(title: "登录时自动启动", action: #selector(toggleLoginItem), keyEquivalent: "")
+    private let loginSettingsMenu = NSMenuItem(title: "在系统设置中允许…", action: #selector(openLoginSettings), keyEquivalent: "")
+    private lazy var dimmingView = DimmingMenuView(percent: config.dimmingPercent)
     private var panels: [DimPanel] = []
     private var frames: [CGRect] = []
     private var timer: Timer?
@@ -18,12 +22,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(systemSymbolName: "display.2", accessibilityDescription: "Focus Screen")
         let menu = NSMenu()
+        menu.delegate = self
         stateItem.isEnabled = false
         menu.addItem(stateItem)
         menu.addItem(.separator())
         toggleItem.target = self
-        toggleItem.state = .on
+        toggleItem.state = config.dimmingEnabled ? .on : .off
         menu.addItem(toggleItem)
+        let dimmingItem = NSMenuItem()
+        dimmingItem.view = dimmingView
+        dimmingView.onChange = { [weak self] percent in
+            guard let self else { return }
+            self.config.dimmingPercent = percent
+            self.panels.forEach { $0.setOpacity(self.config.dimmingOpacity) }
+        }
+        menu.addItem(dimmingItem)
+        menu.addItem(.separator())
+        loginItemMenu.target = self
+        loginSettingsMenu.target = self
+        menu.addItem(loginItemMenu)
+        menu.addItem(loginSettingsMenu)
+        updateLoginItemMenu()
+        menu.addItem(.separator())
         let permission = NSMenuItem(title: "授权辅助功能…", action: #selector(openPermissions), keyEquivalent: "")
         permission.target = self
         menu.addItem(permission)
@@ -54,13 +74,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if currentFrames != frames {
             panels.forEach { $0.close() }
             frames = currentFrames
-            panels = frames.map { DimPanel(frame: $0) }
+            panels = frames.map { DimPanel(frame: $0, opacity: config.dimmingOpacity) }
             displayedScreen = nil
         }
-        guard enabled, screens.count > 1 else {
+        guard config.dimmingEnabled, screens.count > 1 else {
             reader.stopObserving()
             setPollingInterval(nil)
-            clear(enabled ? "单屏幕，无需调暗" : "已暂停")
+            clear(config.dimmingEnabled ? "单屏幕，无需调暗" : "已暂停")
             return
         }
         guard AXIsProcessTrusted() else {
@@ -114,11 +134,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggle() {
-        enabled.toggle()
-        toggleItem.state = enabled ? .on : .off
+        config.dimmingEnabled.toggle()
+        toggleItem.state = config.dimmingEnabled ? .on : .off
         scheduler.cancel()
         refresh()
     }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        updateLoginItemMenu()
+    }
+
+    private func updateLoginItemMenu() {
+        let status = loginItem.status
+        loginItemMenu.state = status == .enabled ? .on : status == .requiresApproval ? .mixed : .off
+        switch status {
+        case .enabled, .notRegistered:
+            loginItemMenu.title = "登录时自动启动"
+        case .requiresApproval:
+            loginItemMenu.title = "登录时自动启动（待允许）"
+        case .notFound:
+            loginItemMenu.title = "登录时自动启动（未找到应用）"
+        @unknown default:
+            loginItemMenu.title = "登录时自动启动（状态未知）"
+        }
+        loginSettingsMenu.isHidden = status != .requiresApproval
+    }
+
+    @objc private func toggleLoginItem() {
+        let status = loginItem.status
+        do {
+            try loginItem.setEnabled(status != .enabled && status != .requiresApproval)
+            updateLoginItemMenu()
+            if loginItem.status == .requiresApproval {
+                showLoginItemMessage("需要允许登录时自动启动", detail: "请在系统设置的登录项中允许 Focus Screen。待允许状态下，再次点击开关可取消注册。")
+            }
+        } catch {
+            updateLoginItemMenu()
+            showLoginItemMessage("无法更改登录时自动启动", detail: error.localizedDescription)
+        }
+    }
+
+    private func showLoginItemMessage(_ title: String, detail: String) {
+        // 菜单动作结束后再显示提示，避免嵌套菜单跟踪循环。
+        DispatchQueue.main.async { [weak self] in
+            let alert = NSAlert()
+            alert.messageText = title
+            alert.informativeText = detail
+            alert.addButton(withTitle: "好")
+            alert.addButton(withTitle: "打开登录项设置")
+            NSApp.activate(ignoringOtherApps: true)
+            if alert.runModal() == .alertSecondButtonReturn { self?.loginItem.openSettings() }
+        }
+    }
+
+    @objc private func openLoginSettings() { loginItem.openSettings() }
 
     @objc private func openPermissions() {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]

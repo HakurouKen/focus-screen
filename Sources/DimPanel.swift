@@ -4,12 +4,12 @@ final class DimPanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
-    init(frame: NSRect) {
+    init(frame: NSRect, opacity: CGFloat) {
         super.init(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
         isReleasedWhenClosed = false
         isOpaque = false
-        backgroundColor = NSColor.black.withAlphaComponent(0.2)
+        setOpacity(opacity)
         hasShadow = false
         ignoresMouseEvents = true
         hidesOnDeactivate = false
@@ -21,5 +21,9 @@ final class DimPanel: NSPanel {
             collectionBehavior.insert(.canJoinAllApplications)
         }
         setAccessibilityElement(false)
+    }
+
+    func setOpacity(_ opacity: CGFloat) {
+        backgroundColor = NSColor.black.withAlphaComponent(min(1, max(0, opacity)))
     }
 }
