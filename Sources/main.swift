@@ -3,8 +3,8 @@ import ApplicationServices
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
-    private let stateItem = NSMenuItem(title: "正在检测焦点…", action: nil, keyEquivalent: "")
-    private let toggleItem = NSMenuItem(title: "启用屏幕调暗", action: #selector(toggle), keyEquivalent: "")
+    private let stateItem = NSMenuItem(title: "正在识别当前屏幕…", action: nil, keyEquivalent: "")
+    private let toggleItem = NSMenuItem(title: "调暗其他屏幕", action: #selector(toggle), keyEquivalent: "")
     private let config = AppConfig()
     private let loginItem = LoginItemController()
     private let loginItemMenu = NSMenuItem(title: "登录时自动启动", action: #selector(toggleLoginItem), keyEquivalent: "")
@@ -20,7 +20,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "display.2", accessibilityDescription: "Focus Screen")
+        statusItem.button?.image = StatusIcon.makeImage()
+        statusItem.button?.setAccessibilityLabel("Sidelit")
+        statusItem.button?.toolTip = stateItem.title
         let menu = NSMenu()
         menu.delegate = self
         stateItem.isEnabled = false
@@ -44,11 +46,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(loginSettingsMenu)
         updateLoginItemMenu()
         menu.addItem(.separator())
-        let permission = NSMenuItem(title: "授权辅助功能…", action: #selector(openPermissions), keyEquivalent: "")
+        let permission = NSMenuItem(title: "授予辅助功能权限…", action: #selector(openPermissions), keyEquivalent: "")
         permission.target = self
         menu.addItem(permission)
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "退出 Focus Screen", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "退出 Sidelit", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
         statusItem.menu = menu
@@ -80,13 +82,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard config.dimmingEnabled, screens.count > 1 else {
             reader.stopObserving()
             setPollingInterval(nil)
-            clear(config.dimmingEnabled ? "单屏幕，无需调暗" : "已暂停")
+            clear(config.dimmingEnabled ? "仅连接一个屏幕，无需调暗" : "已暂停调暗")
             return
         }
         guard AXIsProcessTrusted() else {
             reader.stopObserving()
             setPollingInterval(2)
-            clear("需要辅助功能授权")
+            clear("需要辅助功能权限")
             return
         }
         let axFrame = reader.windowFrame()
@@ -95,10 +97,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
               let index = focusedScreenIndex(
                 window: appKitFrame(fromAX: axFrame, primaryHeight: primary.frame.height),
                 screens: frames) else {
-            clear("未识别到焦点窗口")
+            clear("无法确定当前屏幕")
             return
         }
-        stateItem.title = "焦点：\(screens[index].localizedName)"
+        stateItem.title = "当前屏幕：\(screens[index].localizedName)"
         statusItem.button?.toolTip = stateItem.title
         guard displayedScreen != index || needsPanelUpdate else { return }
         displayedScreen = index
@@ -166,7 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             try loginItem.setEnabled(status != .enabled && status != .requiresApproval)
             updateLoginItemMenu()
             if loginItem.status == .requiresApproval {
-                showLoginItemMessage("需要允许登录时自动启动", detail: "请在系统设置的登录项中允许 Focus Screen。待允许状态下，再次点击开关可取消注册。")
+                showLoginItemMessage("需要允许登录时自动启动", detail: "请在系统设置的登录项中允许 Sidelit。待允许状态下，再次点击开关可取消注册。")
             }
         } catch {
             updateLoginItemMenu()

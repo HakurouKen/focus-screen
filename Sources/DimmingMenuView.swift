@@ -41,7 +41,8 @@ final class DimmingMenuView: NSView {
         slider.isContinuous = true
         slider.target = self
         slider.action = #selector(sliderChanged)
-        slider.setAccessibilityLabel("调暗程度，百分比")
+        slider.setAccessibilityLabel("其他屏幕的调暗程度，百分比")
+        slider.toolTip = "数值越大，其他屏幕越暗。0% 不调暗，100% 全黑。"
         addSubview(slider)
         setPercent(percent)
     }
