@@ -29,4 +29,4 @@
 
 - 原工作区：`/Users/leroy/Documents/projects/focus-screen`，分支 `main`。
 - 实施 worktree：`/Users/leroy/Documents/projects/focus-screen/.codex/worktrees/sidelit-branding`，分支 `feat/sidelit-branding`。
-- 未合并回原分支，等待用户确认。
+- 用户确认后，实施提交 `b01edc3` 已通过 fast-forward 合并到原工作区的 `main`。实施 worktree 保留。
