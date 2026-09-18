@@ -50,6 +50,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         permission.target = self
         menu.addItem(permission)
         menu.addItem(.separator())
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "开发版"
+        let versionItem = NSMenuItem(title: "Sidelit \(version)", action: nil, keyEquivalent: "")
+        versionItem.isEnabled = false
+        menu.addItem(versionItem)
         let quit = NSMenuItem(title: "退出 Sidelit", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)

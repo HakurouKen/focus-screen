@@ -1,0 +1,112 @@
+name: Build and release
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号，必须与 VERSION 一致，例如 0.1.0'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && 'publish' || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Validate version and release target
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_REF: ${{ github.ref }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version="$(./scripts/version.sh)"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$RELEASE_REF" != "refs/heads/main" ]]; then
+              echo "正式发布必须从 main 发起。" >&2
+              exit 1
+            fi
+            ./scripts/version.sh "$RELEASE_VERSION"
+            tags="$(gh api --paginate "repos/$GH_REPO/git/matching-refs/tags/v" --jq '.[].ref')"
+            releases="$(gh release list --limit 1000 --json tagName --jq '.[].tagName')"
+            if printf '%s\n' "$tags" | grep -Fxq "refs/tags/v$version" ||
+               printf '%s\n' "$releases" | grep -Fxq "v$version"; then
+              echo "版本 v$version 已存在；不会覆盖已有 tag、Release 或草稿。" >&2
+              exit 1
+            fi
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    env:
+      SIDELIT_BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Test on native architecture
+        run: ./scripts/test.sh
+      - name: Build Universal release package
+        run: ./scripts/package.sh
+      - name: Verify extracted release package
+        run: ./scripts/verify-package.sh
+      - name: Preserve release assets
+        if: matrix.runner == 'macos-15'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sidelit-release
+          path: |
+            dist/Sidelit-${{ needs.validate.outputs.version }}-universal.zip
+            dist/Sidelit-${{ needs.validate.outputs.version }}-universal.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: [validate, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: sidelit-release
+          path: dist
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          archive="Sidelit-$RELEASE_VERSION-universal.zip"
+          (cd dist && sha256sum -c "$archive.sha256")
+          gh release create "v$RELEASE_VERSION" "dist/$archive" "dist/$archive.sha256" \
+            --target "$GITHUB_SHA" --title "Sidelit $RELEASE_VERSION" \
+            --generate-notes --notes-file .github/release-notes.md --draft
+          gh release edit "v$RELEASE_VERSION" --draft=false --latest
