@@ -1,4 +1,3 @@
-.build/
 dist/
-.codex/
+.build/
 .DS_Store
