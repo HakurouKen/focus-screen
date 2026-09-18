@@ -1,7 +1,7 @@
 # 应用名称、图标与调暗文案统一
 
 Label: wayfinder:map
-Status: open
+Status: resolved
 
 ## Destination
 
@@ -24,10 +24,11 @@ Status: open
 - [对比并确定英文应用名](issues/02-name-direction.md) — 确定为 Sidelit，以舞台侧光为品牌意象。
 - [确定调暗操作、强度与状态的统一中文文案](issues/03-copy-language.md) — 保留「调暗」，统一开关、程度、当前屏幕及各状态文案。
 - [对比并确定双屏明暗图标方案](issues/04-icon-comparison.md) — 采用 A 并排双屏；菜单栏使用固定单色图形，运行状态交由文字说明。
+- [确定 Sidelit 在系统与文档中的呈现规范](issues/05-identity-touchpoints.md) — 对外统一 Sidelit，保留内部身份与设置；实施验收清单已确认。
 
 ## Not yet specified
 
-暂无；剩余呈现规范已归入待决策票。
+无。全部子票已解决，规划可交付实施。
 
 ## Out of scope
 
