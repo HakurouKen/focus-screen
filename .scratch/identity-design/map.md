@@ -22,6 +22,7 @@ Status: open
 
 - [HazeOver 如何表达专注、调暗与视觉识别](issues/01-hazeover-reference.md) — 官方参考已核验；借鉴表达层级，同时明确本项目按屏幕调暗的范围。
 - [对比并确定英文应用名](issues/02-name-direction.md) — 确定为 Sidelit，以舞台侧光为品牌意象。
+- [确定调暗操作、强度与状态的统一中文文案](issues/03-copy-language.md) — 保留「调暗」，统一开关、程度、当前屏幕及各状态文案。
 
 ## Not yet specified
 
