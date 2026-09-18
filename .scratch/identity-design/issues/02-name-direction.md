@@ -2,7 +2,7 @@
 
 Type: grilling
 Label: wayfinder:grilling
-Status: claimed
+Status: resolved
 Assignee: codex
 Parent: ../map.md
 Blocked by: 01
@@ -45,3 +45,11 @@ Blocked by: 01
 初步检索没有发现明确的同名调暗应用，但有 [Sidelit Natural Photography](https://promptbase.com/app/sidelit-natural-photography) 用例，不能宣称独占或未被使用。
 
 本轮排除的明显软件重名方向包括 [Scrim 屏幕遮罩工具](https://tryscrim.com/)、[Offstage macOS 测试工具](https://github.com/thesepehrm/offstage)、[CueWing 舞台流程应用](https://apps.apple.com/nl/app/cuewing-run-of-show/id6792509609)、[Veluro](https://veluro.ai/)、[Winglo](https://winglo.ai/about/) 与 [CueVeil](https://www.cueveil.com/)。这些只作为筛选记录，不是供用户逐个评审的候选。
+
+## Answer
+
+用户接受 **Sidelit** 为最终产品名。标准拼写为首字母大写的单词 Sidelit，不添加空格、连字符或 Screen／Focus 后缀；不另设中文品牌名。
+
+品牌意象来自舞台侧光：主角留在光里，其他事物退入幕后。功能说明交由副标题和界面文案承担；「专注当前屏幕，调暗其他屏幕」仍是待文案票评审的候选。
+
+后续图标以既定双屏明暗方向与新名称协调。名称在各触点的呈现由「确定 Sidelit 在系统与文档中的呈现规范」收口。本次只确定品牌，不修改应用包、可执行文件、bundle identifier 或配置键。
