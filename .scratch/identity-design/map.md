@@ -17,6 +17,7 @@ Status: open
 - 研究资产分支：research/identity-hazeover；worktree：.codex/worktrees/identity-research。资产会复制到本目录供直接阅读，原分支作为来源保留。
 - [当前名称、图标与文案盘点](current-state.md) 提供讨论的源码基线；它是事实记录，不是设计决策。
 - 命名偏好补充：产品名可以使用模糊意象或代指，不要求直接解释功能，也不要求包含 Focus／Screen。具体命名仍在命名票讨论。
+- 用户已选择「舞台」作为命名意象：主角留在光里，其他事物退入幕后。具体名字尚未确定。
 
 ## Decisions so far
 

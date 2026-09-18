@@ -37,3 +37,11 @@ Blocked by: 01
 用户明确：产品名不必清晰表意，可以使用模糊意象或代指。上一轮过分强调功能直译；FocalScreen 不再作为首推方向，原候选仅保留为历史讨论记录。
 
 下一轮从舞台、夜色、留白等意象探索，不要求名称包含 Focus、Screen 或 Dim。具体功能由副标题、双屏明暗图标和界面文案承接。名称的气质由用户选择，不能把本记录理解为已确定新的名称。
+
+### 舞台方向（等待用户评价具体名字）
+
+用户选择舞台意象。首推候选 **Sidelit**，读作 side-lit：取侧光塑造主体轮廓的联想，品牌感觉克制、有明暗层次；名字不承担功能解释。副标题候选仍为「专注当前屏幕，调暗其他屏幕」，菜单示例为「退出 Sidelit」。侧光只是品牌联想，不代表产品会照亮侧边屏幕；若用户产生这一理解，应重新评估名称。
+
+初步检索没有发现明确的同名调暗应用，但有 [Sidelit Natural Photography](https://promptbase.com/app/sidelit-natural-photography) 用例，不能宣称独占或未被使用。
+
+本轮排除的明显软件重名方向包括 [Scrim 屏幕遮罩工具](https://tryscrim.com/)、[Offstage macOS 测试工具](https://github.com/thesepehrm/offstage)、[CueWing 舞台流程应用](https://apps.apple.com/nl/app/cuewing-run-of-show/id6792509609)、[Veluro](https://veluro.ai/)、[Winglo](https://winglo.ai/about/) 与 [CueVeil](https://www.cueveil.com/)。这些只作为筛选记录，不是供用户逐个评审的候选。
